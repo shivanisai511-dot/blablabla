@@ -250,7 +250,7 @@ def community():
                 st.rerun()
             else:
                 st.error("Please add both a title and details.")
-    for post in st.session_state.community_posts:
+    for idx, post in enumerate(st.session_state.community_posts):
         st.markdown(
             f"""
             <div class='card'>
@@ -262,6 +262,22 @@ def community():
             """,
             unsafe_allow_html=True,
         )
+        if st.button("JOIN", key=f"join_community_{idx}_{post['title']}"):
+            join_id = "CJ-" + uuid.uuid4().hex[:8].upper()
+            st.session_state.bookings.append(
+                {
+                    "Booking ID": join_id,
+                    "Sport": post['tag'],
+                    "University": "Community Activity",
+                    "Date": str(date.today()),
+                    "Time": "TBD",
+                    "Duration": "Community",
+                    "Total Price": "Joined: " + post['title'],
+                }
+            )
+            st.success(f"Joined successfully! Added to your bookings ✓")
+            st.info(f"You've joined: {post['title']}")
+            st.rerun()
         st.write("")
 
 
