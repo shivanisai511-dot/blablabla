@@ -319,17 +319,21 @@ def leaderboard():
     st.plotly_chart(fig2, use_container_width=True)
 
 
-@st.cache_data
-def calculate_total_hours(bookings_tuple):
-    if not bookings_tuple:
+def calculate_total_hours(bookings):
+    if not bookings:
         return 0
-    bookings = list(bookings_tuple)
-    return sum(int(b["Duration"].split()[0]) for b in bookings if b["Duration"].startswith("Hour") or b["Duration"].startswith("1") or b["Duration"].startswith("2") or b["Duration"].startswith("3") or b["Duration"].startswith("4"))
+    total = 0
+    for b in bookings:
+        duration = b.get("Duration", "") if isinstance(b, dict) else ""
+        parts = duration.split()
+        if parts and parts[0].isdigit():
+            total += int(parts[0])
+    return total
 
 def profile():
     page_header("Profile", "Your athlete activity summary.")
     bookings = st.session_state.bookings
-    total_hours = calculate_total_hours(tuple(str(b) for b in bookings)) if bookings else 0
+    total_hours = calculate_total_hours(bookings) if bookings else 0
     c1, c2 = st.columns([.9, 1.1])
     with c1:
         st.markdown(
