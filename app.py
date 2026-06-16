@@ -34,6 +34,7 @@ def init_state():
         "selected_university": None,
         "bookings": [],
         "community_posts": COMMUNITY_POSTS.copy(),
+        "joined_communities": set(),
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -230,11 +231,11 @@ def my_bookings():
         return
     df = pd.DataFrame(st.session_state.bookings)
     st.dataframe(df, use_container_width=True, hide_index=True)
-    total_amount = sum(int(b["Total Price"].replace("₹", "")) for b in st.session_state.bookings)
+    total_amount = sum(int(b["Total Price"].replace("₹", "")) for b in st.session_state.bookings if b["Total Price"].startswith("₹"))
     c1, c2, c3 = st.columns(3)
     with c1: stat_card(str(len(df)), "Total Bookings")
     with c2: stat_card(f"₹{total_amount}", "Total Spend")
-    with c3: stat_card(str(sum(int(b["Duration"].split()[0]) for b in st.session_state.bookings)), "Hours Booked")
+    with c3: stat_card(str(sum(int(b["Duration"].split()[0]) for b in st.session_state.bookings if b["Duration"].startswith("Hour") or b["Duration"].startswith("1") or b["Duration"].startswith("2") or b["Duration"].startswith("3") or b["Duration"].startswith("4"))), "Hours Booked")
 
 
 def community():
@@ -251,6 +252,8 @@ def community():
             else:
                 st.error("Please add both a title and details.")
     for idx, post in enumerate(st.session_state.community_posts):
+        post_key = f"{post['title']}_{post['tag']}"
+        is_joined = post_key in st.session_state.joined_communities
         st.markdown(
             f"""
             <div class='card'>
@@ -262,22 +265,25 @@ def community():
             """,
             unsafe_allow_html=True,
         )
-        if st.button("JOIN", key=f"join_community_{idx}_{post['title']}"):
-            join_id = "CJ-" + uuid.uuid4().hex[:8].upper()
-            st.session_state.bookings.append(
-                {
-                    "Booking ID": join_id,
-                    "Sport": post['tag'],
-                    "University": "Community Activity",
-                    "Date": str(date.today()),
-                    "Time": "TBD",
-                    "Duration": "Community",
-                    "Total Price": "Joined: " + post['title'],
-                }
-            )
-            st.success(f"Joined successfully! Added to your bookings ✓")
-            st.info(f"You've joined: {post['title']}")
-            st.rerun()
+        if is_joined:
+            st.markdown("<div style='background:#10B981;color:white;padding:10px;border-radius:8px;font-weight:bold;text-align:center'>✓ Already Joined</div>", unsafe_allow_html=True)
+        else:
+            if st.button("JOIN", key=f"join_community_{idx}_{post['title']}"):
+                join_id = "CJ-" + uuid.uuid4().hex[:8].upper()
+                st.session_state.bookings.append(
+                    {
+                        "Booking ID": join_id,
+                        "Sport": post['tag'],
+                        "University": "Community Activity",
+                        "Date": str(date.today()),
+                        "Time": "TBD",
+                        "Duration": "Community",
+                        "Total Price": "Community Join",
+                    }
+                )
+                st.session_state.joined_communities.add(post_key)
+                st.success(f"Joined successfully! ✓")
+                st.rerun()
         st.write("")
 
 
