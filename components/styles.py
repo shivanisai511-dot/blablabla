@@ -15,8 +15,12 @@ html,body,[class*="css"]{font-family:'Inter',sans-serif!important;color:var(--in
 </style>
 """
 
+@st.cache_resource
+def get_css():
+    return CSS
+
 def apply_styles():
-    st.markdown(CSS, unsafe_allow_html=True)
+    st.markdown(get_css(), unsafe_allow_html=True)
 
 
 # Visibility Patch

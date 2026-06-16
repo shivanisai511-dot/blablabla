@@ -24,7 +24,12 @@ from components.styles import apply_styles
 from components.ui import card, page_header, sidebar_nav, stat_card
 
 st.set_page_config(page_title="SPORTSPACE", page_icon="⚡", layout="wide")
-apply_styles()
+
+@st.cache_resource
+def init_styles():
+    apply_styles()
+
+init_styles()
 
 
 def init_state():
@@ -287,6 +292,19 @@ def community():
         st.write("")
 
 
+@st.cache_data
+def get_leaderboard_charts():
+    df = pd.DataFrame(FACILITY_STATS)
+    fig = px.bar(df, x="name", y="bookings", hover_data=["rating"], title="Top Facilities by Bookings")
+    fig.update_layout(xaxis_title="Facility", yaxis_title="Bookings", height=420, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,.55)")
+    
+    df_uni = pd.DataFrame([{"University": f["name"], "Rating": f["rating"], "Booking Index": f["bookings"]} for f in FACILITY_STATS])
+    fig2 = px.scatter(df_uni, x="Rating", y="Booking Index", size="Booking Index", text="University", title="Top Universities: Rating vs Booking Activity")
+    fig2.update_traces(textposition="top center")
+    fig2.update_layout(height=420, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,.55)")
+    
+    return fig, fig2
+
 def leaderboard():
     page_header("Leaderboard", "Top players, universities, and facilities based on sample activity data.")
     left, right = st.columns([.9, 1.1])
@@ -295,21 +313,23 @@ def leaderboard():
         for p in PLAYERS:
             st.markdown(f"<div class='rank-row'><span><b class='rank'>#{p['rank']}</b> &nbsp; {p['name']} <span class='small'>({p['sport']})</span></span><b>{p['points']} pts</b></div>", unsafe_allow_html=True)
     with right:
-        df = pd.DataFrame(FACILITY_STATS)
-        fig = px.bar(df, x="name", y="bookings", hover_data=["rating"], title="Top Facilities by Bookings")
-        fig.update_layout(xaxis_title="Facility", yaxis_title="Bookings", height=420, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,.55)")
+        fig, fig2 = get_leaderboard_charts()
         st.plotly_chart(fig, use_container_width=True)
-    df_uni = pd.DataFrame([{"University": f["name"], "Rating": f["rating"], "Booking Index": f["bookings"]} for f in FACILITY_STATS])
-    fig2 = px.scatter(df_uni, x="Rating", y="Booking Index", size="Booking Index", text="University", title="Top Universities: Rating vs Booking Activity")
-    fig2.update_traces(textposition="top center")
-    fig2.update_layout(height=420, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,.55)")
+    fig, fig2 = get_leaderboard_charts()
     st.plotly_chart(fig2, use_container_width=True)
 
+
+@st.cache_data
+def calculate_total_hours(bookings_tuple):
+    if not bookings_tuple:
+        return 0
+    bookings = list(bookings_tuple)
+    return sum(int(b["Duration"].split()[0]) for b in bookings if b["Duration"].startswith("Hour") or b["Duration"].startswith("1") or b["Duration"].startswith("2") or b["Duration"].startswith("3") or b["Duration"].startswith("4"))
 
 def profile():
     page_header("Profile", "Your athlete activity summary.")
     bookings = st.session_state.bookings
-    total_hours = sum(int(b["Duration"].split()[0]) for b in bookings) if bookings else 0
+    total_hours = calculate_total_hours(tuple(str(b) for b in bookings)) if bookings else 0
     c1, c2 = st.columns([.9, 1.1])
     with c1:
         st.markdown(

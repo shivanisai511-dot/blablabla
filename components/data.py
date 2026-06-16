@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Dict, List
+import streamlit as st
 
 SPORTS: List[Dict] = [
     {"name":"Football","emoji":"⚽","description":"Full-size turf battles for squads chasing peak performance.","popularity":96,"price":1200,"intensity":"High"},
@@ -57,9 +58,13 @@ USER_PROFILE = {
     "communities_joined": 4,
 }
 
+import streamlit as st
+
+@st.cache_data
 def get_sport(name: str) -> Dict:
     return next(s for s in SPORTS if s["name"] == name)
 
+@st.cache_data
 def facilities_for_sport(sport_name: str) -> List[Dict]:
     sport = get_sport(sport_name)
     facilities = []
@@ -71,6 +76,7 @@ def facilities_for_sport(sport_name: str) -> List[Dict]:
             })
     return facilities
 
+@st.cache_data
 def get_facility(name: str, sport_name: str) -> Dict:
     return next(f for f in facilities_for_sport(sport_name) if f["name"] == name)
 
